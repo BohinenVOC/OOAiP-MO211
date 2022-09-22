@@ -1,4 +1,6 @@
-﻿namespace SpaceBattle;
+﻿//Преступник был неопрятный
+
+namespace SpaceBattle;
 
 public interface IMovemable
 {
