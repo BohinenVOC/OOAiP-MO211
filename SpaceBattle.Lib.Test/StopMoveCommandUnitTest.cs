@@ -80,3 +80,4 @@ public class StopMovingCommandsUnitTests
         mcs_obj.VerifyAll();
     }
 }
+

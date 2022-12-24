@@ -19,3 +19,4 @@ public class StopMoveCommand : ICommand
         IoC.Resolve<ICommand>("Game.Commands.Inject", cmd, empt_cmd).Execute();
     }
 }
+
