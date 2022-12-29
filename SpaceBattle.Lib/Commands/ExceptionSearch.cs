@@ -5,23 +5,17 @@ using Hwdtech;
 public class ExceptionSearch
 {
     private SpaceBattle.Lib.ICommand target;
+    private Exception except;
 
-    public ExceptionSearch(SpaceBattle.Lib.ICommand obj)
+    public ExceptionSearch(SpaceBattle.Lib.ICommand obj, Exception e)
     {
         this.target = obj;
+        this.except = e;
     }
 
     public void Execute()
     {
-        try
-        {
-            target.Execute();
-        }
-        catch (Exception e)
-        {
-            Exception findedE = IoC.Resolve<Exception>("Game.DecisionTree.Exceptions", target, e);
-            IoC.Resolve<SpaceBattle.Lib.ICommand>("Game.Handler.ExceptionHandler", findedE).Execute();
-        }
+        IoC.Resolve<SpaceBattle.Lib.ICommand>("Game.DecisionTree.Exceptions").Execute();
     }
 }
 
