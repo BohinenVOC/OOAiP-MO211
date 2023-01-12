@@ -15,7 +15,7 @@ public class ExceptionSearch
 
     public void Execute()
     {
-        IoC.Resolve<SpaceBattle.Lib.ICommand>("Game.DecisionTree.Exceptions").Execute();
+        IoC.Resolve<SpaceBattle.Lib.ICommand>("Game.DecisionTree.Exceptions", target, except).Execute();
     }
 }
 
