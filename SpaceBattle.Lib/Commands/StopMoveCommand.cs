@@ -13,10 +13,11 @@ public class StopMoveCommand : ICommand
     {
         var obj = stop_obj.uobj;
         var cmd = stop_obj.move_command;
+        var properties = stop_obj.properties;
 
-        IoC.Resolve<IUObject>("Game.Uobject.RemoveProperty", obj, "velocity");
-        var empt_cmd = IoC.Resolve<ICommand>("Game.Commands.EmptyCommand");
-        IoC.Resolve<ICommand>("Game.Commands.Inject", cmd, empt_cmd).Execute();
+        properties.ToList().ForEach(property => IoC.Resolve<ICommand>("Game.Object.DeleteProperty", obj, property).Execute());
+        IoC.Resolve<ICommand>("Game.Commands.InjectEmptyCommand", cmd);
     }
 }
+
 

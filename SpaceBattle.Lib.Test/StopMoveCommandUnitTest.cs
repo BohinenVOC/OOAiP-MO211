@@ -4,80 +4,55 @@ using Moq;
 using Hwdtech;
 using Hwdtech.Ioc;
 
-class RemovePropertyStratagy : IStrategy
-{
-    public object run_strategy(params object[] args)
-    {
-        IUObject obj = (IUObject)args[0];
-        string property_to_remove = (string)args[1];
-        var result = new Mock<SpaceBattle.Lib.IUObject>();
-
-        result.SetupProperty(result => result.properties, new Dictionary<string, object>());
-
-        foreach(var property in obj.properties)
-        {
-            if (property.Key != property_to_remove)
-            {
-                result.Setup(result => result.set_property(property.Key, property.Value));
-            }
-        }
-        return (result.Object);
-    }
-}
-
-class EmptyCommandStrategy : IStrategy
-{
-    public object run_strategy(params object[] args)
-    {
-        var result = new Mock<SpaceBattle.Lib.ICommand>();
-        return (result.Object);
-    }
-}
-
-class InjectCommandStrategy : IStrategy
-{
-    public object run_strategy(params object[] args)
-    {
-        SpaceBattle.Lib.ICommand cmd_to_inject = (SpaceBattle.Lib.ICommand)args[0];
-        SpaceBattle.Lib.ICommand inject_cmd = (SpaceBattle.Lib.ICommand)args[1];
-        
-        cmd_to_inject = inject_cmd;
-        return (cmd_to_inject);
-    }
-}
 public class StopMovingCommandsUnitTests
 {
     static StopMovingCommandsUnitTests()
     {
         new InitScopeBasedIoCImplementationCommand().Execute();
         IoC.Resolve<Hwdtech.ICommand>("Scopes.Current.Set", IoC.Resolve<object>("Scopes.New", IoC.Resolve<object>("Scopes.Root"))).Execute();
+        
+        Mock<SpaceBattle.Lib.ICommand> mockCommand = new Mock<SpaceBattle.Lib.ICommand>();
+        mockCommand.Setup(m => m.Execute());
 
-        var RemovePropertyStratagy = new RemovePropertyStratagy();
-        IoC.Resolve<Hwdtech.ICommand>("IoC.Register", "Game.Uobject.RemoveProperty", (object[] args) => RemovePropertyStratagy.run_strategy(args)).Execute();
+        Mock<IStrategy> mockStrategyDelete = new Mock<IStrategy>();
+        mockStrategyDelete.Setup(m => m.run_strategy(It.IsAny<object[]>())).Returns(mockCommand.Object);
+        IoC.Resolve<ICommand>("IoC.Register", "Game.Object.DeleteProperty", (object[] args) => mockStrategyDelete.Object.run_strategy(args)).Execute();
 
-        var EmptyCommandStrategy = new EmptyCommandStrategy();
-        IoC.Resolve<Hwdtech.ICommand>("IoC.Register", "Game.Commands.EmptyCommand", (object[] args) => EmptyCommandStrategy.run_strategy(args)).Execute();
-
-        var InjectCommandStrategy = new InjectCommandStrategy();
-        IoC.Resolve<Hwdtech.ICommand>("IoC.Register", "Game.Commands.Inject", (object[] args) => InjectCommandStrategy.run_strategy(args)).Execute();    
+        Mock<IStrategy> mockStrategyInject = new Mock<IStrategy>();
+        mockStrategyInject.Setup(m => m.run_strategy()).Returns(mockCommand.Object);
+        IoC.Resolve<ICommand>("IoC.Register", "Game.Commands.InjectEmptyCommand", (object[] args) => mockStrategyInject.Object.run_strategy(args)).Execute();
     }
 
     [Fact]
-    public void StartMoveCommandGood()
+    public void StopMoveCommandGood()
     {
-        var mcs_obj = new Mock<IMoveCommandStopable>();
-        var move_command = new Mock<SpaceBattle.Lib.ICommand>();
-        var uobj = new Mock<IUObject>();
-        var dict = new Dictionary<string, object>(){["velocity"] = new Vector(1)};
-        
-        mcs_obj.SetupGet(com => com.uobj).Returns(uobj.Object);
-        mcs_obj.SetupProperty(com => com.uobj.properties, dict);
-        mcs_obj.SetupGet(com => com.move_command).Returns(move_command.Object);
-        var smc = new StopMoveCommand(mcs_obj.Object);
-        
-        smc.Execute();
-        
-        mcs_obj.VerifyAll();
+        Mock<IMoveCommandStopable> stop_obj = new Mock<IMoveCommandStopable>();
+        Mock<IUObject> mockUobj = new Mock<IUObject>();
+        stop_obj.SetupGet(m => m.uobj).Returns(mockUobj.Object).Verifiable();
+        stop_obj.SetupGet(m => m.properties).Returns(new List<string>() {"Velocity"}).Verifiable();
+        SpaceBattle.Lib.ICommand stop_cmd = new StopMoveCommand(stop_obj.Object);
+        stop_cmd.Execute();
+    }
+
+    [Fact]
+    public void TestNegativeGetUobject()
+    {
+        Mock<IMoveCommandStopable> stop_obj = new Mock<IMoveCommandStopable>();
+        stop_obj.SetupGet(m => m.uobj).Throws<Exception>().Verifiable();
+        stop_obj.SetupGet(m => m.properties).Returns(new List<string>() {"Velocity"}).Verifiable();
+        SpaceBattle.Lib.ICommand stop_cmd = new StopMoveCommand(stop_obj.Object);
+        Assert.Throws<Exception>(() => stop_cmd.Execute());
+    }
+
+    [Fact]
+    public void TestNegativeGetProperties()
+    {
+        Mock<IMoveCommandStopable> stop_obj = new Mock<IMoveCommandStopable>();
+        Mock<IUObject> mockUobj = new Mock<IUObject>();
+        stop_obj.SetupGet(m => m.uobj).Returns(mockUobj.Object).Verifiable();
+        stop_obj.SetupGet(m => m.properties).Throws<Exception>().Verifiable();
+        SpaceBattle.Lib.ICommand stop_cmd = new StopMoveCommand(stop_obj.Object);
+        Assert.Throws<Exception>(() => stop_cmd.Execute());
     }
 }
 
